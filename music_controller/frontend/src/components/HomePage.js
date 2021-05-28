@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import JoinRoomPage from "./JoinRoomPage";
-import CreateRoomPage from "./CreateRoomPage";
+import RoomSettingsPage from "./RoomSettingsPage";
 import { Grid, Button, ButtonGroup, Typography } from "@material-ui/core";
 import {
 	BrowserRouter as Router,
@@ -78,7 +78,7 @@ export default class HomeComponent extends Component {
 						}}
 					></Route>
 					<Route path="/join" component={JoinRoomPage} />
-					<Route path="/create" component={CreateRoomPage} />
+					<Route path="/create" component={RoomSettingsPage} />
 					<Route path="/room/:roomCode" render={(props) => {
 						return <Room {...props} leaveRoomCallback={this.clearRoomCode} />
 					}} />
