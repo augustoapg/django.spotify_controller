@@ -1,6 +1,8 @@
 import React, { Component } from "react";
-import { Grid, Button, Typography } from "@material-ui/core";
+import { Grid, Button, Typography, Collapse } from "@material-ui/core";
 import RoomSettingsPage from "./RoomSettingsPage";
+import MusicPlayer from "./MusicPlayer";
+import Alert from "@material-ui/lab/Alert";
 
 export default class Room extends Component {
 	constructor(props) {
@@ -10,6 +12,8 @@ export default class Room extends Component {
 			guestCanPause: false,
 			isHost: false,
 			showSettings: false,
+			song: {},
+			alertMessage: "",
 		};
 		this.roomCode = this.props.match.params.roomCode;
 		this.getRoomDetails = this.getRoomDetails.bind(this);
@@ -19,7 +23,29 @@ export default class Room extends Component {
 		this.renderSettingsButton = this.renderSettingsButton.bind(this);
 		this.renderSettingsPage = this.renderSettingsPage.bind(this);
 		this.authenticateSpotify = this.authenticateSpotify.bind(this);
+		this.getCurrentSong = this.getCurrentSong.bind(this);
+		this.showAlert = this.showAlert.bind(this);
 		this.getRoomDetails();
+	}
+
+	componentDidMount() {
+		this.interval = setInterval(this.getCurrentSong, 1000);
+	}
+
+	componentWillUnmount() {
+		clearInterval(this.interval);
+	}
+
+	getCurrentSong() {
+		fetch("/spotify/current-song")
+			.then((response) => {
+				if (!response.ok) {
+					return {};
+				} else {
+					return response.json();
+				}
+			})
+			.then((data) => this.setState({ song: data }));
 	}
 
 	updateShowSettings(value) {
@@ -116,6 +142,10 @@ export default class Room extends Component {
 			});
 	}
 
+	showAlert(alertMessage) {
+		this.setState({ alertMessage: alertMessage });
+	}
+
 	renderRoomPage() {
 		return (
 			<Grid container spacing={1}>
@@ -125,20 +155,23 @@ export default class Room extends Component {
 					</Typography>
 				</Grid>
 				<Grid item xs={12} align="center">
-					<Typography variant="h6" component="h6">
-						Votes: {this.state.votesToSkip}
-					</Typography>
+					<Collapse in={this.state.alertMessage != ""}>
+						<Alert
+							severity="error"
+							onClose={() => {
+								this.setState({ alertMessage: "" });
+							}}
+						>
+							{this.state.alertMessage}
+						</Alert>
+					</Collapse>
 				</Grid>
-				<Grid item xs={12} align="center">
-					<Typography variant="h6" component="h6">
-						Guest can pause: {"" + this.state.guestCanPause}
-					</Typography>
-				</Grid>
-				<Grid item xs={12} align="center">
-					<Typography variant="h6" component="h6">
-						Is Host: {"" + this.state.isHost}
-					</Typography>
-				</Grid>
+				<MusicPlayer
+					{...this.state.song}
+					guestCanPause={this.state.guestCanPause}
+					isHost={this.state.isHost}
+					showAlert={this.showAlert}
+				/>
 				{this.state.isHost ? this.renderSettingsButton() : null}
 				<Grid item xs={12} align="center">
 					<Button
