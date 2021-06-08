@@ -10,6 +10,7 @@ import {
 	Redirect,
 } from "react-router-dom";
 import Room from "./Room";
+import Info from "./Info";
 
 export default class HomeComponent extends Component {
 	constructor(props) {
@@ -50,6 +51,9 @@ export default class HomeComponent extends Component {
 						<Button color="secondary" to="/create" component={Link}>
 							Create a Room
 						</Button>
+						<Button color="default" to="/info" component={Link}>
+							Info
+						</Button>
 					</ButtonGroup>
 				</Grid>
 			</Grid>
@@ -79,9 +83,18 @@ export default class HomeComponent extends Component {
 					></Route>
 					<Route path="/join" component={JoinRoomPage} />
 					<Route path="/create" component={RoomSettingsPage} />
-					<Route path="/room/:roomCode" render={(props) => {
-						return <Room {...props} leaveRoomCallback={this.clearRoomCode} />
-					}} />
+					<Route
+						path="/room/:roomCode"
+						render={(props) => {
+							return (
+								<Room
+									{...props}
+									leaveRoomCallback={this.clearRoomCode}
+								/>
+							);
+						}}
+					/>
+					<Route path="/info" component={Info}></Route>
 				</Switch>
 			</Router>
 		);
