@@ -19,6 +19,8 @@ export default class MusicPlayer extends Component {
 			isHost: this.props.isHost,
 			guestCanPause: this.props.guestCanPause,
 		};
+		this.renderDefault = this.renderDefault.bind(this);
+		this.renderPlayer = this.renderPlayer.bind(this);
 	}
 
 	pauseSong() {
@@ -63,7 +65,21 @@ export default class MusicPlayer extends Component {
 		});
 	}
 
-	render() {
+	renderDefault() {
+		return (
+			<Card>
+				<Grid container alignItems="center">
+					<Grid item align="center" xs={12}>
+						<Typography component="h5" variant="h5">
+							No music found. Please play a song on your Spotify.
+						</Typography>
+					</Grid>
+				</Grid>
+			</Card>
+		);
+	}
+
+	renderPlayer() {
 		const songProgress = (this.props.time / this.props.duration) * 100;
 		return (
 			<Card>
@@ -110,5 +126,9 @@ export default class MusicPlayer extends Component {
 				<LinearProgress variant="determinate" value={songProgress} />
 			</Card>
 		);
+	}
+
+	render() {
+		return this.props.title ? this.renderPlayer() : this.renderDefault();
 	}
 }

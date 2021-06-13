@@ -22,7 +22,7 @@ class AuthURL(APIView):
     """
 
     def get(self, request, format=None):
-        scope = "user-read-playback-state user-modify-playback-state user-read-currently-playing"
+        scope = "user-read-playback-state user-modify-playback-state user-read-currently-playing user-library-read"
 
         url = (
             Request(
@@ -99,7 +99,7 @@ class CurrentSong(APIView):
         response = execute_spotify_api_request(host, endpoint)
 
         if "error" in response or "item" not in response:
-            return Response({}, status=status.HTTP_204_NO_CONTENT)
+            return self.get_last_played_song(room, host)
 
         item = response.get("item")
         duration = item.get("duration_ms")
@@ -109,13 +109,8 @@ class CurrentSong(APIView):
         song_id = item.get("id")
         votes = Vote.objects.filter(room=room, song_id=room.current_song)
 
-        artist_string = ""
-
-        for i, artist in enumerate(item.get("artists")):
-            if i > 0:
-                artist_string += ", "
-            name = artist.get("name")
-            artist_string += name
+        artists = item.get("artists")
+        artist_string = self.get_artists_string(artists)
 
         song = {
             "title": item.get("name"),
@@ -131,6 +126,54 @@ class CurrentSong(APIView):
 
         self.update_room_song(room, song_id)
 
+        return Response(song, status=status.HTTP_200_OK)
+
+    def get_artists_string(self, artists):
+        artist_string = ""
+        for i, artist in enumerate(artists):
+            if i > 0:
+                artist_string += ", "
+            name = artist.get("name")
+            artist_string += name
+        return artist_string
+
+    def get_last_played_song(self, room, host):
+        print("last-played")
+        endpoint = "player/recently-played"
+        response = execute_spotify_api_request(host, endpoint)
+        print(response)
+
+        if (
+            "error" in response
+            or "items" not in response
+            or len(response.get("items") == 0)
+        ):
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+        item = response.get("items")[0]
+        duration = item.get("duration_ms")
+        progress = 0
+        album_cover = item.get("album").get("images")[0].get("url")
+        is_playing = False
+        song_id = item.get("id")
+        votes = 0
+
+        artists = item.get("artists")
+        artist_string = self.get_artists_string(artists)
+
+        song = {
+            "title": item.get("name"),
+            "artist": artist_string,
+            "duration": duration,
+            "time": progress,
+            "image_url": album_cover,
+            "is_playing": is_playing,
+            "votes": len(votes),
+            "votes_required": room.votes_to_skip,
+            "id": song_id,
+        }
+
+        self.update_room_song(room, song_id)
         return Response(song, status=status.HTTP_200_OK)
 
     def update_room_song(self, room, song_id):
