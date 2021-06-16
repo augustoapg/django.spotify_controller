@@ -22,7 +22,7 @@ class AuthURL(APIView):
     """
 
     def get(self, request, format=None):
-        scope = "user-read-playback-state user-modify-playback-state user-read-currently-playing user-library-read"
+        scope = "user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-recently-played"
 
         url = (
             Request(
@@ -99,7 +99,8 @@ class CurrentSong(APIView):
         response = execute_spotify_api_request(host, endpoint)
 
         if "error" in response or "item" not in response:
-            return self.get_last_played_song(room, host)
+            # return self.get_last_played_song(room, host)
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
 
         item = response.get("item")
         duration = item.get("duration_ms")
@@ -138,40 +139,43 @@ class CurrentSong(APIView):
         return artist_string
 
     def get_last_played_song(self, room, host):
+        # attempted to get last played song to show in case user had not played a song in a while,
+        # and currently-playing returns nothing. This function works, but user won't be able to
+        # play the shown song for not having an active device set. TODO: Get endpoint for
+        # allowing the user to choose a device to play
         print("last-played")
         endpoint = "player/recently-played"
         response = execute_spotify_api_request(host, endpoint)
-        print(response)
 
         if (
             "error" in response
             or "items" not in response
-            or len(response.get("items") == 0)
+            or len(response.get("items")) == 0
         ):
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
         item = response.get("items")[0]
-        duration = item.get("duration_ms")
-        progress = 0
-        album_cover = item.get("album").get("images")[0].get("url")
-        is_playing = False
-        song_id = item.get("id")
-        votes = 0
 
-        artists = item.get("artists")
+        title = item.get("track").get("name")
+        duration = item.get("track").get("duration_ms")
+        album_cover = item.get("track").get("album").get("images")[0].get("url")
+        song_id = item.get("track").get("id")
+        artists = item.get("track").get("artists")
         artist_string = self.get_artists_string(artists)
 
         song = {
-            "title": item.get("name"),
+            "title": title,
             "artist": artist_string,
             "duration": duration,
-            "time": progress,
+            "time": 0,
             "image_url": album_cover,
-            "is_playing": is_playing,
-            "votes": len(votes),
+            "is_playing": False,
+            "votes": 0,
             "votes_required": room.votes_to_skip,
             "id": song_id,
         }
+
+        print(song)
 
         self.update_room_song(room, song_id)
         return Response(song, status=status.HTTP_200_OK)
